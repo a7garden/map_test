@@ -1,6 +1,16 @@
-# map_test
+# map_test — 장소 공유 지도 (Phase 1)
 
-Vite + React + MUI로 카카오맵 JavaScript SDK를 테스트하는 프로젝트.
+Vite + React 19 + MUI 9 기반 카카오맵 장소 공유 프로젝트.
+
+**현재 상태**: Phase 1 (로컬 First) 완료 — 모든 기능이 localStorage로 동작. Phase 2에서 Firebase로 마이그레이션 예정.
+
+## 주요 기능 (Phase 1)
+
+- 📍 카카오맵 위에 핀(장소) 생성 / 조회 / 좋아요 / 삭제
+- 🔍 카카오 Places API 키워드 검색 → 핀 추가
+- 👤 모의 인증 (DevUserSwitcher) — Phase 2에서 Google 로그인으로 교체
+- 💾 localStorage 영속성 + BroadcastChannel로 탭 간 실시간 동기화
+- 📱 모바일 FIRST 레이아웃, 트렌디한 MUI 테마
 
 ## 시작하기
 
