@@ -5,7 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>카카오맵 테스트</title>
-    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=4d37ca60b10d44b4854a1b164ed6114e"></script>
+    <!--
+      카카오맵 SDK: autoload=false로 로드하여 React 측에서 kakao.maps.load()로 안전하게 초기화.
+      키는 .env의 VITE_KAKAO_MAP_KEY에서 %VITE_KAKAO_MAP_KEY% 플레이스홀더로 주입됨.
+    -->
+    <script
+      type="text/javascript"
+      src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=%VITE_KAKAO_MAP_KEY%&autoload=false&libraries=services,clusterer,drawing"
+    ></script>
   </head>
   <body>
     <div id="root"></div>

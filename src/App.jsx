@@ -1,34 +1,18 @@
-import { useEffect, useRef } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
-import { useState } from 'react';
+import { useRef } from 'react';
+import { Box, Typography, CircularProgress, Alert } from '@mui/material';
+import { useKakaoMap } from './hooks/useKakaoMap';
+
+// 카카오 본사 (제주 아님) 좌표 — 기본 중심점
+const DEFAULT_CENTER = { lat: 33.450701, lng: 126.570667 };
+const DEFAULT_LEVEL = 3;
 
 function App() {
   const mapRef = useRef(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const initMap = () => {
-      if (mapRef.current && typeof window.kakao !== 'undefined' && typeof window.kakao.maps.Map !== 'undefined') {
-        const options = {
-          center: new window.kakao.maps.LatLng(33.450701, 126.570667),
-          level: 3,
-        };
-        new window.kakao.maps.Map(mapRef.current, options);
-        setIsLoading(false);
-      } else if (typeof window.kakao === 'undefined') {
-        setTimeout(initMap, 100);
-      } else {
-        setIsLoading(false);
-      }
-    };
-
-    if (document.readyState === 'complete') {
-      initMap();
-    } else {
-      window.addEventListener('load', initMap);
-      return () => window.removeEventListener('load', initMap);
-    }
-  }, []);
+  const { isLoading, error } = useKakaoMap(mapRef, () => ({
+    center: new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
+    level: DEFAULT_LEVEL,
+  }));
 
   return (
     <Box sx={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -36,14 +20,22 @@ function App() {
         <Typography variant="h6">카카오맵</Typography>
       </Box>
       <Box sx={{ flex: 1, width: '100%', position: 'relative', minHeight: 0 }}>
-        <Box
-          id="map"
-          ref={mapRef}
-          sx={{ width: '100%', height: '100%' }}
-        />
+        <Box id="map" ref={mapRef} sx={{ width: '100%', height: '100%' }} />
         {isLoading && (
-          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
             <CircularProgress />
+          </Box>
+        )}
+        {error && (
+          <Box sx={{ position: 'absolute', top: 16, left: 16, right: 16 }}>
+            <Alert severity="error">지도를 불러올 수 없습니다: {error.message}</Alert>
           </Box>
         )}
       </Box>
