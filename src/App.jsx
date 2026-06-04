@@ -1,44 +1,84 @@
-import { useRef } from 'react';
-import { Box, Typography, CircularProgress, Alert } from '@mui/material';
-import { useKakaoMap } from './hooks/useKakaoMap';
+import { useCallback, useRef, useState } from 'react';
+import { Box } from '@mui/material';
+import { TopBar } from './components/chrome/TopBar';
+import { Fab } from './components/chrome/Fab';
+import { MapView } from './components/map/MapView';
+import { NewPinSheet } from './components/sheets/NewPinSheet';
+import { PinDetailSheet } from './components/sheets/PinDetailSheet';
+import { PlaceSearchSheet } from './components/sheets/PlaceSearchSheet';
+import { DevUserSwitcher } from './components/auth/DevUserSwitcher';
 
-// 카카오 본사 (제주 아님) 좌표 — 기본 중심점
 const DEFAULT_CENTER = { lat: 33.450701, lng: 126.570667 };
-const DEFAULT_LEVEL = 3;
 
 function App() {
   const mapRef = useRef(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [profileAnchor, setProfileAnchor] = useState(null);
+  const [newPinCoords, setNewPinCoords] = useState(null);
+  const [selectedPin, setSelectedPin] = useState(null);
 
-  const { isLoading, error } = useKakaoMap(mapRef, () => ({
-    center: new window.kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng),
-    level: DEFAULT_LEVEL,
-  }));
+  const handleMapClick = useCallback((lat, lng) => {
+    setNewPinCoords({ lat, lng });
+  }, []);
+
+  const handlePinClick = useCallback((pin) => {
+    setSelectedPin(pin);
+  }, []);
+
+  const handleSearchSelect = useCallback((place) => {
+    const lat = parseFloat(place.y);
+    const lng = parseFloat(place.x);
+    if (mapRef.current) {
+      mapRef.current.panTo(lat, lng);
+    }
+    setNewPinCoords({ lat, lng });
+  }, []);
+
+  const handleFabClick = useCallback(() => {
+    const center = mapRef.current?.getCenter() ?? DEFAULT_CENTER;
+    setNewPinCoords(center);
+  }, []);
 
   return (
-    <Box sx={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, bgcolor: 'primary.main', color: 'white' }}>
-        <Typography variant="h6">카카오맵</Typography>
+    <Box
+      sx={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      <TopBar
+        onSearchClick={() => setSearchOpen(true)}
+        onProfileClick={(e) => setProfileAnchor(e.currentTarget)}
+      />
+      <Box sx={{ flex: 1, position: 'relative', minHeight: 0 }}>
+        <MapView ref={mapRef} onMapClick={handleMapClick} onPinClick={handlePinClick} />
+        <Fab onClick={handleFabClick} />
       </Box>
-      <Box sx={{ flex: 1, width: '100%', position: 'relative', minHeight: 0 }}>
-        <Box id="map" ref={mapRef} sx={{ width: '100%', height: '100%' }} />
-        {isLoading && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        )}
-        {error && (
-          <Box sx={{ position: 'absolute', top: 16, left: 16, right: 16 }}>
-            <Alert severity="error">지도를 불러올 수 없습니다: {error.message}</Alert>
-          </Box>
-        )}
-      </Box>
+
+      <PlaceSearchSheet
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSelect={handleSearchSelect}
+      />
+      <NewPinSheet
+        open={Boolean(newPinCoords)}
+        onClose={() => setNewPinCoords(null)}
+        lat={newPinCoords?.lat ?? DEFAULT_CENTER.lat}
+        lng={newPinCoords?.lng ?? DEFAULT_CENTER.lng}
+      />
+      <PinDetailSheet
+        open={Boolean(selectedPin)}
+        onClose={() => setSelectedPin(null)}
+        pin={selectedPin}
+      />
+      <DevUserSwitcher
+        anchorEl={profileAnchor}
+        open={Boolean(profileAnchor)}
+        onClose={() => setProfileAnchor(null)}
+      />
     </Box>
   );
 }
