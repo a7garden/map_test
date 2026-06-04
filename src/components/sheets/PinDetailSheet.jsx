@@ -14,6 +14,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { BottomSheet } from './BottomSheet';
 import { usePins } from '../../hooks/usePins';
 import { useAuth } from '../../hooks/useAuth';
+import { useSnackbar } from '../feedback/useSnackbar';
 import { formatRelative } from '../../utils/formatDate';
 
 // Phase 1: hardcoded group id → display name. Phase 2 will read from
@@ -41,6 +42,7 @@ function getGroupName(id) {
 export function PinDetailSheet({ open, onClose, pin, onDeleted }) {
   const { pins, toggleLike, deletePin } = usePins();
   const { currentUser, isAuthenticated } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const [signInPrompt, setSignInPrompt] = useState(false);
 
   // props.pin은 시트가 열려 있는 동안 다른 마커 클릭 등으로 교체될 수 있다.
@@ -69,8 +71,10 @@ export function PinDetailSheet({ open, onClose, pin, onDeleted }) {
     const url = `${window.location.href}?pin=${livePin.id}`;
     try {
       await navigator.clipboard.writeText(url);
+      showSnackbar('링크가 복사되었습니다', 'success');
     } catch (err) {
       console.warn('[PinDetailSheet] clipboard write failed:', err);
+      showSnackbar('링크 복사에 실패했습니다', 'error');
     }
   };
 
@@ -78,6 +82,7 @@ export function PinDetailSheet({ open, onClose, pin, onDeleted }) {
     if (!livePin) return;
     if (!window.confirm('이 핀을 삭제하시겠습니까?')) return;
     deletePin(livePin.id);
+    showSnackbar('핀이 삭제되었습니다', 'success');
     onDeleted?.();
     onClose();
   };

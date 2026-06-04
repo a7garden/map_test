@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { Box, CircularProgress, Alert } from '@mui/material';
 import { useKakaoMap } from '../../hooks/useKakaoMap';
 import { usePins } from '../../hooks/usePins';
+import { loadLastPosition, saveLastPosition, LAST_POSITION_DEBOUNCE_MS } from '../../utils/lastPosition';
 
 // 인디고 핀 모양 SVG (32x40) → data URL
 const PIN_SVG = encodeURIComponent(`
@@ -31,10 +32,13 @@ function createMarkerImage() {
  */
 export const MapView = forwardRef(function MapView({ onMapClick, onPinClick }, ref) {
   const containerRef = useRef(null);
-  const { isLoading, error, map } = useKakaoMap(containerRef, () => ({
-    center: new window.kakao.maps.LatLng(33.450701, 126.570667),
-    level: 3,
-  }));
+  const { isLoading, error, map } = useKakaoMap(containerRef, () => {
+    const last = loadLastPosition();
+    return {
+      center: new window.kakao.maps.LatLng(last?.lat ?? 33.450701, last?.lng ?? 126.570667),
+      level: last?.level ?? 3,
+    };
+  });
   const { pins } = usePins();
   const markersRef = useRef([]);
 
@@ -69,19 +73,42 @@ export const MapView = forwardRef(function MapView({ onMapClick, onPinClick }, r
     };
   }, [map, onMapClick]);
 
+  // 마지막 중심 위치 저장 (debounce)
+  useEffect(() => {
+    if (!map) return undefined;
+    let timeoutId = null;
+    const persist = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        const c = map.getCenter();
+        saveLastPosition(c.getLat(), c.getLng(), map.getLevel());
+      }, LAST_POSITION_DEBOUNCE_MS);
+    };
+    window.kakao.maps.event.addListener(map, 'center_changed', persist);
+    window.kakao.maps.event.addListener(map, 'zoom_changed', persist);
+    return () => {
+      window.kakao.maps.event.removeListener(map, 'center_changed', persist);
+      window.kakao.maps.event.removeListener(map, 'zoom_changed', persist);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [map]);
+
   // 핀 마커 렌더 (pins 변경 시 재생성)
   useEffect(() => {
     if (!map) return undefined;
 
-    // 기존 마커/리스너 정리
-    markersRef.current.forEach(({ marker, clickHandler }) => {
-      window.kakao.maps.event.removeListener(marker, 'click', clickHandler);
-      marker.setMap(null);
-    });
-    markersRef.current = [];
+    const clearMarkers = () => {
+      markersRef.current.forEach(({ marker, clickHandler }) => {
+        window.kakao.maps.event.removeListener(marker, 'click', clickHandler);
+        marker.setMap(null);
+      });
+      markersRef.current = [];
+    };
+
+    // 의존성 변경 시 이전 마커 제거
+    clearMarkers();
 
     const image = createMarkerImage();
-
     pins.forEach((pin) => {
       const marker = new window.kakao.maps.Marker({
         position: new window.kakao.maps.LatLng(pin.lat, pin.lng),
@@ -94,9 +121,8 @@ export const MapView = forwardRef(function MapView({ onMapClick, onPinClick }, r
       markersRef.current.push({ marker, clickHandler });
     });
 
-    return () => {
-      // cleanup은 다음 effect 시작 시와 unmount 시 모두 처리됨
-    };
+    // unmount / map 교체 / pins 교체 / callback 교체 시 정리
+    return clearMarkers;
   }, [map, pins, onPinClick]);
 
   return (

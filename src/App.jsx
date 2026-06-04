@@ -7,6 +7,7 @@ import { NewPinSheet } from './components/sheets/NewPinSheet';
 import { PinDetailSheet } from './components/sheets/PinDetailSheet';
 import { PlaceSearchSheet } from './components/sheets/PlaceSearchSheet';
 import { DevUserSwitcher } from './components/auth/DevUserSwitcher';
+import { SnackbarProvider } from './components/feedback/SnackbarProvider';
 
 const DEFAULT_CENTER = { lat: 33.450701, lng: 126.570667 };
 
@@ -40,46 +41,48 @@ function App() {
   }, []);
 
   return (
-    <Box
-      sx={{
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
-      <TopBar
-        onSearchClick={() => setSearchOpen(true)}
-        onProfileClick={(e) => setProfileAnchor(e.currentTarget)}
-      />
-      <Box sx={{ flex: 1, position: 'relative', minHeight: 0 }}>
-        <MapView ref={mapRef} onMapClick={handleMapClick} onPinClick={handlePinClick} />
-        <Fab onClick={handleFabClick} />
-      </Box>
+    <SnackbarProvider>
+      <Box
+        sx={{
+          width: '100vw',
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <TopBar
+          onSearchClick={() => setSearchOpen(true)}
+          onProfileClick={(e) => setProfileAnchor(e.currentTarget)}
+        />
+        <Box sx={{ flex: 1, position: 'relative', minHeight: 0 }}>
+          <MapView ref={mapRef} onMapClick={handleMapClick} onPinClick={handlePinClick} />
+          <Fab onClick={handleFabClick} />
+        </Box>
 
-      <PlaceSearchSheet
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onSelect={handleSearchSelect}
-      />
-      <NewPinSheet
-        open={Boolean(newPinCoords)}
-        onClose={() => setNewPinCoords(null)}
-        lat={newPinCoords?.lat ?? DEFAULT_CENTER.lat}
-        lng={newPinCoords?.lng ?? DEFAULT_CENTER.lng}
-      />
-      <PinDetailSheet
-        open={Boolean(selectedPin)}
-        onClose={() => setSelectedPin(null)}
-        pin={selectedPin}
-      />
-      <DevUserSwitcher
-        anchorEl={profileAnchor}
-        open={Boolean(profileAnchor)}
-        onClose={() => setProfileAnchor(null)}
-      />
-    </Box>
+        <PlaceSearchSheet
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          onSelect={handleSearchSelect}
+        />
+        <NewPinSheet
+          open={Boolean(newPinCoords)}
+          onClose={() => setNewPinCoords(null)}
+          lat={newPinCoords?.lat ?? DEFAULT_CENTER.lat}
+          lng={newPinCoords?.lng ?? DEFAULT_CENTER.lng}
+        />
+        <PinDetailSheet
+          open={Boolean(selectedPin)}
+          onClose={() => setSelectedPin(null)}
+          pin={selectedPin}
+        />
+        <DevUserSwitcher
+          anchorEl={profileAnchor}
+          open={Boolean(profileAnchor)}
+          onClose={() => setProfileAnchor(null)}
+        />
+      </Box>
+    </SnackbarProvider>
   );
 }
 
