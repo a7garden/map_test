@@ -14,6 +14,33 @@ Vite + React 19 + MUI 9 기반 카카오맵 장소 공유 프로젝트.
 
 ## 시작하기
 
+```bash
+npm install
+npm run dev
+# → http://localhost:5173/
+```
+
+> 카카오맵 JavaScript 키는 `index.html`에 하드코딩되어 있어 별도 환경변수 설정 없이 바로 실행됩니다. 운영 배포 시에는 도메인 등록 + 환경변수 분리를 권장합니다.
+
+## 카카오맵 SDK 사용 패턴
+
+`index.html`에서 `autoload=false`로 스크립트를 로드하고, React 측에서 `kakao.maps.load()` 콜백으로 SDK 완전 준비를 기다린 뒤 지도를 생성합니다.
+
+```jsx
+// src/App.jsx
+const { isLoading, error } = useKakaoMap(mapRef, () => ({
+  center: new window.kakao.maps.LatLng(33.450701, 126.570667),
+  level: 3,
+}));
+```
+
+`src/hooks/useKakaoMap.js`는 다음을 처리합니다:
+- SDK 스크립트 로드 완료 대기
+- `kakao.maps.load()` 콜백으로 모듈 준비 확인
+- React 19 StrictMode의 dev 더블 마운트 안전 처리
+
+## 시작하기
+
 ### 1) 카카오 개발자 콘솔 설정
 1. https://developers.kakao.com 로그인
 2. **앱 → 제품 설정 → 카카오맵** 활성화

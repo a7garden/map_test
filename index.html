@@ -9,11 +9,11 @@
     <title>핀플 — 장소 공유 지도</title>
     <!--
       카카오맵 SDK: autoload=false로 로드하여 React 측에서 kakao.maps.load()로 안전하게 초기화.
-      키는 .env의 VITE_KAKAO_MAP_KEY에서 %VITE_KAKAO_MAP_KEY% 플레이스홀더로 주입됨.
+      키는 하드코딩 (Phase 1, 로컬 First). 운영 시에는 도메인 제한과 함께 환경변수로 옮길 것.
     -->
     <script
       type="text/javascript"
-      src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=%VITE_KAKAO_MAP_KEY%&autoload=false&libraries=services,clusterer,drawing"
+      src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=5be0a34292474922b240a1bd76ad518c&autoload=false&libraries=services,clusterer,drawing"
     ></script>
   </head>
   <body>
