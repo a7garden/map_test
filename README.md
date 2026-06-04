@@ -1,43 +1,19 @@
-# map_test — 장소 공유 지도 (Phase 1)
+# map_test — 장소 공유 지도
 
 Vite + React 19 + MUI 9 기반 카카오맵 장소 공유 프로젝트.
 
-**현재 상태**: Phase 1 (로컬 First) 완료 — 모든 기능이 localStorage로 동작. Phase 2에서 Firebase로 마이그레이션 예정.
+## 상태
 
-## 주요 기능 (Phase 1)
+- **Phase 1 (로컬 First) 완료** — 모든 기능이 localStorage로 동작, Firebase 없이 완결
+- **Phase 2 예정** — Firebase Auth (Google) + Firestore + Security Rules 마이그레이션
+
+## 주요 기능
 
 - 📍 카카오맵 위에 핀(장소) 생성 / 조회 / 좋아요 / 삭제
 - 🔍 카카오 Places API 키워드 검색 → 핀 추가
-- 👤 모의 인증 (DevUserSwitcher) — Phase 2에서 Google 로그인으로 교체
+- 👤 모의 인증 (`DevUserSwitcher`) — Phase 2에서 Google 로그인으로 교체
 - 💾 localStorage 영속성 + BroadcastChannel로 탭 간 실시간 동기화
-- 📱 모바일 FIRST 레이아웃, 트렌디한 MUI 테마
-
-## 시작하기
-
-```bash
-npm install
-npm run dev
-# → http://localhost:5173/
-```
-
-> 카카오맵 JavaScript 키는 `index.html`에 하드코딩되어 있어 별도 환경변수 설정 없이 바로 실행됩니다. 운영 배포 시에는 도메인 등록 + 환경변수 분리를 권장합니다.
-
-## 카카오맵 SDK 사용 패턴
-
-`index.html`에서 `autoload=false`로 스크립트를 로드하고, React 측에서 `kakao.maps.load()` 콜백으로 SDK 완전 준비를 기다린 뒤 지도를 생성합니다.
-
-```jsx
-// src/App.jsx
-const { isLoading, error } = useKakaoMap(mapRef, () => ({
-  center: new window.kakao.maps.LatLng(33.450701, 126.570667),
-  level: 3,
-}));
-```
-
-`src/hooks/useKakaoMap.js`는 다음을 처리합니다:
-- SDK 스크립트 로드 완료 대기
-- `kakao.maps.load()` 콜백으로 모듈 준비 확인
-- React 19 StrictMode의 dev 더블 마운트 안전 처리
+- 📱 모바일 FIRST 레이아웃, 트렌디한 MUI 9 테마 (indigo 액센트 + Pretendard/Inter)
 
 ## 시작하기
 
@@ -45,67 +21,127 @@ const { isLoading, error } = useKakaoMap(mapRef, () => ({
 1. https://developers.kakao.com 로그인
 2. **앱 → 제품 설정 → 카카오맵** 활성화
 3. **앱 → 앱 설정 → 플랫폼 → Web**에 도메인 등록 (예: `http://localhost:5173`)
-4. 발급받은 **JavaScript 키** 복사
 
-### 2) 환경변수 설정
-```bash
-cp .env.example .env
-# .env 파일을 열어 VITE_KAKAO_MAP_KEY 값을 본인의 키로 교체
-```
+> JS 키는 현재 `index.html`에 하드코딩되어 있어 별도 설정 없이 실행됩니다. 운영 배포 시 도메인 등록 + 환경변수 분리를 권장합니다.
 
-### 3) 실행
+### 2) 실행
 ```bash
 npm install
 npm run dev
+# → http://localhost:5173/
 ```
 
-## 카카오맵 SDK 사용 패턴
+### 3) 테스트 시나리오
+1. 우측 상단 👤 → **앨리스** 선택
+2. 지도 빈 곳 탭 → 새 핀 시트 → 제목/태그 입력 → 저장
+3. 핀 탭 → 상세 시트 → ♡ 좋아요
+4. 시크릿 창으로 같은 URL → 실시간 반영 확인
+5. 🔍 → "강남역" 검색 → 결과 탭 → 자동 핀 생성 시트
+6. 새로고침 → 마지막 위치 + 핀들 유지
 
-`index.html`에서 `autoload=false`로 스크립트를 로드하고, React 측에서 `kakao.maps.load()` 콜백으로 SDK 완전 준비를 기다린 뒤 지도를 생성합니다.
+## 기술 스택
 
-```jsx
-// src/App.jsx
-const { isLoading, error } = useKakaoMap(mapRef, () => ({
-  center: new window.kakao.maps.LatLng(33.450701, 126.570667),
-  level: 3,
-}));
-```
-
-`src/hooks/useKakaoMap.js`는 다음을 처리합니다:
-- SDK 스크립트 로드 완료 대기
-- `kakao.maps.load()` 콜백으로 모듈 준비 확인
-- React 19 StrictMode의 dev 더블 마운트 안전 처리
-- 에러 상태 노출
-
-## 환경변수
-
-| 변수 | 설명 | 필수 |
+| 영역 | 선택 | 이유 |
 |------|------|------|
-| `VITE_KAKAO_MAP_KEY` | 카카오맵 JavaScript SDK 키 | ✅ |
+| 빌드 | Vite 8 | 빠른 HMR, ESM 네이티브 |
+| UI | React 19 | 최신 useEffect 패턴, StrictMode dev 더블 마운트 명시 |
+| 컴포넌트 | shadcn/ui (Radix + Tailwind) | copy-paste 소유, 트렌디, Vercel 톤 |
+| 지도 | 카카오맵 SDK | 한글 POI, Places API |
+| 데이터 | localStorage + BroadcastChannel | Phase 1 무서버 / Phase 2에서 어댑터 교체 |
+| 인증 | 모의 (`DEV_USERS`) | Phase 1 / Phase 2에서 Firebase Auth |
+| 호스팅 | Firebase Hosting (설정만) | `firebase.json`에 public: dist |
 
-`.env`는 `.gitignore`에 의해 커밋되지 않습니다. 팀원에게 공유할 키 형식은 `.env.example`을 참고하세요.
+## 디렉토리
 
-## 보안 주의사항
+```
+src/
+├── App.jsx                              # 메인 state 머신 (시트 라우팅)
+├── main.jsx                             # React 부트스트랩
+├── index.css                            # Tailwind v4 + 디자인 토큰 (CSS 변수)
+├── lib/utils.js                         # cn() 유틸 (shadcn 표준)
+├── services/
+│   ├── dataAdapter.js                   # 인터페이스 (Phase 1: localStorage)
+│   └── localAdapter.js                  # localStorage + BroadcastChannel
+├── hooks/
+│   ├── useKakaoMap.js                   # SDK 로드 + 지도 생성
+│   ├── useAuth.js                       # 모의 인증
+│   ├── usePins.js                       # 핀 목록 실시간 구독
+│   ├── useSearch.js                     # 카카오 Places 검색
+│   └── useColorMode.js                  # 다크/라이트 모드 (system preference)
+├── components/
+│   ├── ui/                              # shadcn 컴포넌트 (button, input, sheet, dropdown-menu, ...)
+│   ├── chrome/{TopBar, Fab}.jsx         # 상단바, FAB
+│   ├── auth/DevUserSwitcher.jsx         # Phase 1 모의 유저 전환
+│   ├── map/MapView.jsx                  # 마커 + 클릭 핸들러
+│   └── sheets/                          # NewPinSheet, PinDetailSheet, PlaceSearchSheet
+└── utils/{uid, devUsers, formatDate, lastPosition}.js
+```
 
-- 카카오맵 **JavaScript 키**는 클라이언트 노출이 의도된 키입니다 (도메인 기반 제한)
-- 단, GitHub 등 공개 저장소에 노출되면 누구나 도용 가능하므로 **반드시 도메인 등록**을 함께 설정
-- 키 유출 의심 시 카카오 콘솔에서 즉시 재발급 (Rotate)
+자세한 아키텍처 결정은 `docs/designs/2026-06-04-place-sharing-design.md` 참고.
 
----
+## 사용 가능한 스크립트
 
-## React + Vite (원본 README)
+```bash
+npm run dev      # vite 개발 서버
+npm run build    # 프로덕션 빌드 (dist/)
+npm run preview  # 빌드된 결과 로컬 서빙
+npm run lint     # ESLint
+```
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 디자인 토큰
 
-Currently, two official plugins are available:
+`src/index.css`에 CSS 변수로 정의. Tailwind v4의 `@theme inline`으로 자동 매핑.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| 토큰 | light | dark |
+|---|---|---|
+| `--background` | `#FFFFFF` | `#0A0A0A` |
+| `--primary` | `#0070F3` (Vercel blue) | `#3B82F6` (밝게) |
+| `--radius` | `0.75rem` (12px) | - |
+| `--pin-restaurants` | `#FF6B35` (주황) | - |
+| `--pin-cafes` | `#8B4513` (브라운) | - |
 
-## React Compiler
+다크 모드 토글: TopBar의 달/해 아이콘 클릭. localStorage에 저장, system preference 자동 추적.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 보안
 
-## Expanding the ESLint configuration
+- 카카오맵 **JavaScript 키**는 도메인 기반 제한 키 — 카카오 콘솔에서 Web 플랫폼에 도메인 등록 필수
+- GitHub 공개 저장소에 노출 시 누구나 도용 가능 → 도메인 등록 + 필요 시 키 Rotate
+- `firebase deploy`로 호스팅 시 자동 도메인 등록됨 (Firebase 자동 생성 도메인)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Firebase (Phase 2)
+
+`firebase.json`에 hosting만 설정되어 있음. Firestore/Auth는 Phase 2 작업:
+1. 콘솔에서 Firestore + Authentication(Google) 활성화
+2. `firebase init`으로 firestore 추가 → `firestore.rules` 작성
+3. `src/services/firebaseAdapter.js` 작성 (기존 `localAdapter`와 동일 인터페이스)
+4. `src/services/dataAdapter.js`의 import 한 줄만 교체
+
+## Phase 2 데이터 모델 (예정)
+
+```js
+// Firestore: pins collection
+{
+  id: auto,
+  lat, lng, title?, description?, tags: string[], groupId?,
+  authorId: request.auth.uid,
+  authorName, authorPhoto,
+  createdAt: serverTimestamp,
+  likeCount: number,  // derived from likedBy.length
+  likedBy: string[],
+}
+
+// Security Rules
+match /pins/{pinId} {
+  allow read: if true;                                    // 누구나 조회
+  allow create: if request.auth != null
+                && request.resource.data.authorId == request.auth.uid;
+  allow update, delete: if request.auth != null
+                        && resource.data.authorId == request.auth.uid;
+}
+```
+
+## 라이선스 / 크레딧
+
+- 카카오맵 SDK © Kakao Corp.
+- MUI © MUI Team (MIT)
+- React © Meta (MIT)

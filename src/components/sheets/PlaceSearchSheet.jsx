@@ -1,32 +1,25 @@
 import { useEffect, useRef } from 'react';
-import PropTypes from 'prop-types';
+import { Search, X, Loader2 } from 'lucide-react';
 import {
-  Box,
-  CircularProgress,
-  IconButton,
-  InputAdornment,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  TextField,
-  Typography,
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import CloseIcon from '@mui/icons-material/Close';
-import { BottomSheet } from './BottomSheet';
-import { useSearch } from '../../hooks/useSearch';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { useSearch } from '@/hooks/useSearch';
 
 export function PlaceSearchSheet({ open, onClose, onSelect }) {
   const { query, setQuery, results, isSearching, error, clear } = useSearch();
   const inputRef = useRef(null);
 
-  // 시트가 열릴 때 이전 검색 상태를 비우고 입력에 포커스
   useEffect(() => {
-    if (!open) return;
-    clear();
-    const t = setTimeout(() => inputRef.current?.focus(), 100);
-    return () => clearTimeout(t);
+    if (open) {
+      clear();
+      const t = setTimeout(() => inputRef.current?.focus(), 150);
+      return () => clearTimeout(t);
+    }
+    return undefined;
   }, [open, clear]);
 
   const handleSelect = (place) => {
@@ -35,77 +28,66 @@ export function PlaceSearchSheet({ open, onClose, onSelect }) {
     onClose();
   };
 
-  const showInitial = !query.trim();
-  const showEmpty = !showInitial && !isSearching && !error && results.length === 0;
-
   return (
-    <BottomSheet open={open} onClose={onClose} title="장소 검색">
-      <TextField
-        inputRef={inputRef}
-        fullWidth
-        autoFocus
-        placeholder="장소, 주소 검색"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: query ? (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={clear} aria-label="검색어 지우기">
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ) : null,
-          },
-        }}
-      />
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="bottom" className="overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>장소 검색</SheetTitle>
+        </SheetHeader>
 
-      <Box sx={{ mt: 2, minHeight: 200 }}>
-        {isSearching ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : error ? (
-          <Box sx={{ py: 4, textAlign: 'center' }}>
-            <Typography color="error">검색에 실패했습니다</Typography>
-            <Typography variant="caption" color="text.secondary">
-              잠시 후 다시 시도해 주세요
-            </Typography>
-          </Box>
-        ) : showInitial ? (
-          <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-            장소를 검색해보세요
-          </Typography>
-        ) : showEmpty ? (
-          <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-            검색 결과가 없습니다
-          </Typography>
-        ) : (
-          <List disablePadding>
-            {results.map((place) => (
-              <ListItem key={place.id} disablePadding divider>
-                <ListItemButton onClick={() => handleSelect(place)}>
-                  <ListItemText
-                    primary={place.place_name}
-                    secondary={place.road_address_name || place.address_name}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        )}
-      </Box>
-    </BottomSheet>
+        <div className="px-5 py-4 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="장소, 주소 검색"
+              className="pl-9 pr-9"
+              autoComplete="off"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={clear}
+                aria-label="검색어 지우기"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="min-h-[200px]">
+            {isSearching ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : error ? (
+              <p className="text-sm text-destructive text-center py-12">검색에 실패했습니다</p>
+            ) : !query.trim() ? (
+              <p className="text-sm text-muted-foreground text-center py-12">장소를 검색해보세요</p>
+            ) : results.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-12">검색 결과가 없습니다</p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {results.map((place) => (
+                  <li
+                    key={place.id}
+                    onClick={() => handleSelect(place)}
+                    className="py-3 px-2 -mx-2 rounded-md cursor-pointer hover:bg-accent transition-colors"
+                  >
+                    <p className="text-sm font-semibold text-foreground">{place.place_name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {place.road_address_name || place.address_name}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
-
-PlaceSearchSheet.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onSelect: PropTypes.func.isRequired,
-};

@@ -1,22 +1,22 @@
 import { useState } from 'react';
-import PropTypes from 'prop-types';
+import { X, Plus } from 'lucide-react';
 import {
-  Box,
-  Button,
-  Chip,
-  MenuItem,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
-import { useAuth } from '../../hooks/useAuth';
-import { usePins } from '../../hooks/usePins';
-import { BottomSheet } from './BottomSheet';
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
+import { usePins } from '@/hooks/usePins';
 
 const MAX_TAGS = 8;
 const MAX_TAG_LENGTH = 20;
-
-// Phase 1 기본 그룹 (그룹 관리 화면 미구현)
 const DEFAULT_GROUPS = [
   { id: 'restaurants', name: '맛집' },
   { id: 'cafes', name: '카페' },
@@ -25,53 +25,66 @@ const DEFAULT_GROUPS = [
 function TagInput({ value, onChange, max = MAX_TAGS, maxTagLength = MAX_TAG_LENGTH }) {
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
-  const clearError = () => setError('');
 
   const tryAdd = (raw) => {
     const tag = raw.trim().slice(0, maxTagLength);
     if (!tag) return false;
-    if (value.includes(tag)) { setInput(''); clearError(); return false; }
+    if (value.includes(tag)) { setInput(''); setError(''); return false; }
     if (value.length >= max) { setError(`태그는 최대 ${max}개까지 추가할 수 있어요`); return false; }
     onChange([...value, tag]);
-    setInput(''); clearError();
+    setInput(''); setError('');
     return true;
   };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') { e.preventDefault(); tryAdd(input); return; }
     if (e.key === 'Backspace' && input === '' && value.length > 0) {
-      onChange(value.slice(0, -1)); clearError();
+      onChange(value.slice(0, -1)); setError('');
     }
   };
 
   return (
-    <Box>
-      <TextField
-        value={input}
-        onChange={(e) => { setInput(e.target.value); clearError(); }}
-        onKeyDown={handleKeyDown}
-        placeholder="태그 입력 후 Enter"
-        size="small" fullWidth
-        disabled={value.length >= max}
-        inputProps={{ maxLength: maxTagLength }}
-      />
+    <div>
+      <div className="flex gap-2">
+        <Input
+          value={input}
+          onChange={(e) => { setInput(e.target.value); setError(''); }}
+          onKeyDown={handleKeyDown}
+          placeholder="태그 입력 후 Enter"
+          maxLength={maxTagLength}
+          disabled={value.length >= max}
+          className="flex-1"
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => tryAdd(input)}
+          disabled={value.length >= max}
+          aria-label="태그 추가"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
       {value.length > 0 && (
-        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+        <div className="flex flex-wrap gap-1.5 mt-2">
           {value.map((tag) => (
-            <Chip key={tag} label={tag} size="small" onDelete={() => { onChange(value.filter((t) => t !== tag)); clearError(); }} />
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="cursor-pointer"
+              onClick={() => onChange(value.filter((t) => t !== tag))}
+            >
+              {tag}
+              <X className="ml-1 h-3 w-3" />
+            </Badge>
           ))}
-        </Stack>
+        </div>
       )}
-      {error && <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>{error}</Typography>}
-    </Box>
+      {error && <p className="text-xs text-destructive mt-1.5">{error}</p>}
+    </div>
   );
 }
-TagInput.propTypes = {
-  value: PropTypes.arrayOf(PropTypes.string).isRequired,
-  onChange: PropTypes.func.isRequired,
-  max: PropTypes.number,
-  maxTagLength: PropTypes.number,
-};
 
 function NewPinForm({ lat, lng, onClose, onSaved }) {
   const { currentUser } = useAuth();
@@ -83,7 +96,7 @@ function NewPinForm({ lat, lng, onClose, onSaved }) {
 
   const handleSave = () => {
     if (!currentUser) return;
-    const newPin = createPin({
+    createPin({
       lat, lng,
       title: title.trim() || undefined,
       description: description.trim() || undefined,
@@ -93,76 +106,96 @@ function NewPinForm({ lat, lng, onClose, onSaved }) {
       authorName: currentUser.displayName,
       authorPhoto: currentUser.photoURL ?? null,
     });
-    onSaved?.(newPin);
+    onSaved?.();
     onClose();
   };
 
   return (
-    <Stack spacing={2}>
-      <Box>
-        <Typography variant="caption" color="text.secondary" component="div">위치</Typography>
-        <Typography variant="body2" sx={{ mt: 0.25 }}>📍 {lat.toFixed(4)}, {lng.toFixed(4)}</Typography>
-        <Typography variant="caption" color="text.secondary">지도를 움직여 위치 조정</Typography>
-      </Box>
-      <TextField label="제목 (선택)" placeholder="예: 성산일출봉 카페"
-        value={title} onChange={(e) => setTitle(e.target.value)}
-        fullWidth size="small" />
-      <TextField label="설명 (선택)" placeholder="이 장소에 대한 메모"
-        value={description} onChange={(e) => setDescription(e.target.value)}
-        multiline rows={3} fullWidth size="small" />
-      <Box>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>태그</Typography>
+    <div className="px-5 py-4 space-y-4">
+      <div>
+        <p className="text-xs text-muted-foreground">위치</p>
+        <p className="text-sm font-medium mt-0.5">📍 {lat.toFixed(4)}, {lng.toFixed(4)}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">지도를 움직여 위치 조정</p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="title">제목 <span className="text-muted-foreground font-normal">(선택)</span></Label>
+        <Input
+          id="title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="예: 성산일출봉 카페"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="desc">설명 <span className="text-muted-foreground font-normal">(선택)</span></Label>
+        <Textarea
+          id="desc"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="이 장소에 대한 메모"
+          rows={3}
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>태그 <span className="text-muted-foreground font-normal">(선택)</span></Label>
         <TagInput value={tags} onChange={setTags} />
-      </Box>
-      <TextField select label="그룹 (선택)" value={groupId}
-        onChange={(e) => setGroupId(e.target.value)} fullWidth size="small">
-        <MenuItem value="">없음</MenuItem>
-        {DEFAULT_GROUPS.map((g) => <MenuItem key={g.id} value={g.id}>{g.name}</MenuItem>)}
-      </TextField>
-      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-        <Button onClick={onClose}>취소</Button>
-        <Button variant="contained" onClick={handleSave} disabled={!currentUser}>저장</Button>
-      </Box>
-    </Stack>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="group">그룹 <span className="text-muted-foreground font-normal">(선택)</span></Label>
+        <select
+          id="group"
+          value={groupId}
+          onChange={(e) => setGroupId(e.target.value)}
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="">없음</option>
+          {DEFAULT_GROUPS.map((g) => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex gap-2 justify-end pt-2">
+        <Button variant="ghost" onClick={onClose}>취소</Button>
+        <Button onClick={handleSave} disabled={!currentUser}>저장</Button>
+      </div>
+    </div>
   );
 }
-NewPinForm.propTypes = {
-  lat: PropTypes.number.isRequired,
-  lng: PropTypes.number.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onSaved: PropTypes.func,
-};
 
 function SignInPrompt({ onClose }) {
   return (
-    <Stack spacing={2} alignItems="center" sx={{ py: 3 }}>
-      <Typography variant="body1">Google 로그인이 필요합니다</Typography>
-      <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+    <div className="px-5 py-8 flex flex-col items-center gap-3">
+      <p className="text-base">Google 로그인이 필요합니다</p>
+      <p className="text-xs text-muted-foreground text-center">
         (Phase 1에서는 DevUserSwitcher로 유저를 선택하세요)
-      </Typography>
-      <Button onClick={onClose} variant="outlined">닫기</Button>
-    </Stack>
+      </p>
+      <Button variant="outline" onClick={onClose} className="mt-2">닫기</Button>
+    </div>
   );
 }
-SignInPrompt.propTypes = { onClose: PropTypes.func.isRequired };
 
 export function NewPinSheet({ open, onClose, lat, lng, onSaved }) {
   const { isAuthenticated } = useAuth();
   return (
-    <BottomSheet open={open} onClose={onClose} title="새 핀">
-      {isAuthenticated ? (
-        // key 전이(open↔closed)로 폼을 리마운트 → 상태가 자연 초기화
-        <NewPinForm key={open ? 'open' : 'closed'} lat={lat} lng={lng} onClose={onClose} onSaved={onSaved} />
-      ) : (
-        <SignInPrompt onClose={onClose} />
-      )}
-    </BottomSheet>
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="bottom" className="overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>새 핀</SheetTitle>
+          <SheetClose className="absolute right-3 top-3 rounded-sm opacity-70 hover:opacity-100">
+            <X className="h-4 w-4" />
+          </SheetClose>
+        </SheetHeader>
+        {isAuthenticated ? (
+          <NewPinForm key={open ? 'open' : 'closed'} lat={lat} lng={lng} onClose={onClose} onSaved={onSaved} />
+        ) : (
+          <SignInPrompt onClose={onClose} />
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
-NewPinSheet.propTypes = {
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  lat: PropTypes.number.isRequired,
-  lng: PropTypes.number.isRequired,
-  onSaved: PropTypes.func,
-};

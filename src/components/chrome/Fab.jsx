@@ -1,28 +1,28 @@
-import PropTypes from 'prop-types';
-import { Fab as MuiFab } from '@mui/material';
-import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
+import { MapPinPlus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-export function Fab({ onClick, disabled = false }) {
+/**
+ * 현재 지도 중심에 새 핀 추가하는 FAB.
+ * Vercel 스타일: 살짝 그라데이션 + 미묘한 그림자.
+ */
+export function Fab({ onClick, disabled = false, className }) {
   return (
-    <MuiFab
-      variant="extended"
-      color="primary"
+    <Button
+      variant="default"
+      size="lg"
       onClick={onClick}
       disabled={disabled}
-      sx={{
-        position: 'fixed',
-        bottom: 24,
-        right: 24,
-        zIndex: 1000,
-      }}
+      className={cn(
+        'fixed bottom-6 right-6 z-50 h-12 rounded-2xl px-5 shadow-lg shadow-primary/30',
+        'bg-gradient-to-br from-primary to-primary/85 hover:shadow-xl hover:shadow-primary/40',
+        'transition-all active:scale-95',
+        className,
+      )}
+      aria-label="핀 추가"
     >
-      <AddLocationAltIcon sx={{ mr: 1 }} />
-      핀 추가
-    </MuiFab>
+      <MapPinPlus className="h-5 w-5" />
+      <span className="font-semibold">핀 추가</span>
+    </Button>
   );
 }
-
-Fab.propTypes = {
-  onClick: PropTypes.func.isRequired,
-  disabled: PropTypes.bool,
-};

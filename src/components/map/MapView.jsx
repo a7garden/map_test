@@ -1,63 +1,65 @@
 import { useEffect, useImperativeHandle, useRef, forwardRef } from 'react';
-import PropTypes from 'prop-types';
-import { Box, CircularProgress, Alert } from '@mui/material';
+import { Loader2 } from 'lucide-react';
 import { useKakaoMap } from '../../hooks/useKakaoMap';
 import { usePins } from '../../hooks/usePins';
 import { loadLastPosition, saveLastPosition, LAST_POSITION_DEBOUNCE_MS } from '../../utils/lastPosition';
+import { cn } from '@/lib/utils';
 
-// 인디고 핀 모양 SVG (32x40) → data URL
-const PIN_SVG = encodeURIComponent(`
+// OKLCH → hex 변환 (간단한 폴백)
+const oklchToHex = (oklch) => {
+  // CSS 변수가 hex가 아닐 경우 대비한 폴백
+  const map = {
+    'restaurants': '#FF6B35',
+    'cafes': '#8B4513',
+    'default': '#0070F3',
+  };
+  return map[oklch] || '#0070F3';
+};
+
+const buildPinSvg = (hexColor) => `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 40" width="32" height="40">
+    <defs>
+      <filter id="pinShadow" x="-20%" y="-10%" width="140%" height="130%">
+        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.25"/>
+      </filter>
+    </defs>
     <path d="M16 0 C7.16 0 0 7.16 0 16 C0 28 16 40 16 40 C16 40 32 28 32 16 C32 7.16 24.84 0 16 0 Z"
-          fill="#3D5AFE" stroke="white" stroke-width="1.5"/>
+          fill="${hexColor}" stroke="white" stroke-width="1.5" filter="url(#pinShadow)"/>
     <circle cx="16" cy="16" r="5.5" fill="white"/>
   </svg>
-`);
+`;
 
-function createMarkerImage() {
+function createMarkerImage(color) {
   return new window.kakao.maps.MarkerImage(
-    `data:image/svg+xml;charset=utf-8,${PIN_SVG}`,
+    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(buildPinSvg(color))}`,
     new window.kakao.maps.Size(32, 40),
     { offset: new window.kakao.maps.Point(16, 40) },
   );
 }
 
-/**
- * 카카오맵 + 핀 마커 + 클릭 이벤트.
- *
- * @param {object} props
- * @param {(lat:number,lng:number)=>void} [props.onMapClick] 빈 지도 클릭 시
- * @param {(pin)=>void} [props.onPinClick] 핀 클릭 시
- * @param {React.Ref} [ref] 명령형 ref: { panTo(lat,lng), getCenter() }
- */
-export const MapView = forwardRef(function MapView({ onMapClick, onPinClick }, ref) {
+export const MapView = forwardRef(function MapView({ onMapClick, onPinClick, className }, ref) {
   const containerRef = useRef(null);
   const { isLoading, error, map } = useKakaoMap(containerRef, () => {
     const last = loadLastPosition();
     return {
-      center: new window.kakao.maps.LatLng(last?.lat ?? 33.450701, last?.lng ?? 126.570667),
+      center: new window.kakao.maps.LatLng(last?.lat ?? 37.5665, last?.lng ?? 126.9780),
       level: last?.level ?? 3,
     };
   });
   const { pins } = usePins();
   const markersRef = useRef([]);
 
-  // 외부로 노출할 명령형 API
-  useImperativeHandle(
-    ref,
-    () => ({
-      panTo(lat, lng) {
-        if (!map) return;
-        map.panTo(new window.kakao.maps.LatLng(lat, lng));
-      },
-      getCenter() {
-        if (!map) return null;
-        const c = map.getCenter();
-        return { lat: c.getLat(), lng: c.getLng() };
-      },
-    }),
-    [map],
-  );
+  useImperativeHandle(ref, () => ({
+    panTo(lat, lng) {
+      if (!map) return;
+      map.panTo(new window.kakao.maps.LatLng(lat, lng));
+    },
+    getCenter() {
+      if (!map) return null;
+      const c = map.getCenter();
+      return { lat: c.getLat(), lng: c.getLng() };
+    },
+  }), [map]);
 
   // 빈 지도 클릭 → 새 핀 좌표
   useEffect(() => {
@@ -73,7 +75,7 @@ export const MapView = forwardRef(function MapView({ onMapClick, onPinClick }, r
     };
   }, [map, onMapClick]);
 
-  // 마지막 중심 위치 저장 (debounce)
+  // 마지막 위치 저장 (debounce)
   useEffect(() => {
     if (!map) return undefined;
     let timeoutId = null;
@@ -93,7 +95,7 @@ export const MapView = forwardRef(function MapView({ onMapClick, onPinClick }, r
     };
   }, [map]);
 
-  // 핀 마커 렌더 (pins 변경 시 재생성)
+  // 핀 마커 렌더
   useEffect(() => {
     if (!map) return undefined;
 
@@ -105,11 +107,11 @@ export const MapView = forwardRef(function MapView({ onMapClick, onPinClick }, r
       markersRef.current = [];
     };
 
-    // 의존성 변경 시 이전 마커 제거
     clearMarkers();
 
-    const image = createMarkerImage();
     pins.forEach((pin) => {
+      const color = oklchToHex(pin.groupId || 'default');
+      const image = createMarkerImage(color);
       const marker = new window.kakao.maps.Marker({
         position: new window.kakao.maps.LatLng(pin.lat, pin.lng),
         map,
@@ -121,28 +123,22 @@ export const MapView = forwardRef(function MapView({ onMapClick, onPinClick }, r
       markersRef.current.push({ marker, clickHandler });
     });
 
-    // unmount / map 교체 / pins 교체 / callback 교체 시 정리
     return clearMarkers;
   }, [map, pins, onPinClick]);
 
   return (
-    <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-      <Box ref={containerRef} sx={{ width: '100%', height: '100%' }} />
+    <div className={cn('relative w-full h-full', className)}>
+      <div ref={containerRef} className="w-full h-full" />
       {isLoading && (
-        <CircularProgress
-          sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-        />
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 pointer-events-none">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
       )}
       {error && (
-        <Alert severity="error" sx={{ position: 'absolute', top: 16, left: 16, right: 16 }}>
+        <div className="absolute top-4 left-4 right-4 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error.message}
-        </Alert>
+        </div>
       )}
-    </Box>
+    </div>
   );
 });
-
-MapView.propTypes = {
-  onMapClick: PropTypes.func,
-  onPinClick: PropTypes.func,
-};

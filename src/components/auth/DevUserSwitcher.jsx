@@ -1,77 +1,64 @@
-import PropTypes from 'prop-types';
+import { Check } from 'lucide-react';
 import {
-  Avatar,
-  Box,
-  Divider,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  Typography,
-} from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-import { useAuth } from '../../hooks/useAuth';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useAuth } from '@/hooks/useAuth';
 
-// Phase 1 전용 — Phase 2(Firebase Auth)에서 제거될 개발자용 사용자 전환 메뉴.
-export function DevUserSwitcher({ anchorEl, open, onClose }) {
-  const { currentUser, signIn, devUsers } = useAuth();
+/**
+ * 모의 유저 전환 메뉴 (Phase 1 전용).
+ */
+export function DevUserSwitcher({ open, onOpenChange }) {
+  const { currentUser, devUsers, signIn } = useAuth();
 
-  const handleSelect = (uid) => () => {
+  const handleSelect = (uid) => {
     signIn(uid);
-    onClose();
+    onOpenChange(false);
   };
 
   return (
-    <Menu
-      anchorEl={anchorEl}
-      open={open}
-      onClose={onClose}
-      slotProps={{ paper: { sx: { minWidth: 240 } } }}
-    >
-      <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-        {currentUser ? (
-          <>
-            <Typography variant="caption" color="text.secondary">현재 사용자</Typography>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
-              {currentUser.displayName}
-            </Typography>
-          </>
-        ) : (
-          <Typography variant="caption" color="text.secondary">
-            로그인이 필요합니다
-          </Typography>
+    <DropdownMenu open={open} onOpenChange={onOpenChange}>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-64"
+      >
+        <DropdownMenuLabel>
+          {currentUser ? '현재 사용자' : '로그인이 필요합니다'}
+        </DropdownMenuLabel>
+        {currentUser && (
+          <div className="px-3 py-2 text-sm font-semibold text-foreground">
+            {currentUser.displayName}
+          </div>
         )}
-      </Box>
-      {devUsers.map((u) => {
-        const isCurrent = currentUser?.uid === u.uid;
-        return (
-          <MenuItem key={u.uid} selected={isCurrent} onClick={handleSelect(u.uid)}>
-            <ListItemIcon sx={{ minWidth: 40 }}>
-              <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main', fontSize: 14 }}>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>유저 전환</DropdownMenuLabel>
+        {devUsers.map((u) => (
+          <DropdownMenuItem
+            key={u.uid}
+            onClick={() => handleSelect(u.uid)}
+            className="cursor-pointer"
+          >
+            <Avatar className="h-7 w-7">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                 {u.displayName[0]}
-              </Avatar>
-            </ListItemIcon>
-            <ListItemText>{u.displayName}</ListItemText>
-            {isCurrent && (
-              <ListItemIcon sx={{ justifyContent: 'flex-end', minWidth: 32 }}>
-                <CheckIcon fontSize="small" color="primary" />
-              </ListItemIcon>
+              </AvatarFallback>
+            </Avatar>
+            <span className="flex-1">{u.displayName}</span>
+            {currentUser?.uid === u.uid && (
+              <Check className="h-4 w-4 text-primary" />
             )}
-          </MenuItem>
-        );
-      })}
-      <Divider />
-      <Box sx={{ px: 2, py: 1 }}>
-        <Typography variant="caption" color="text.secondary">
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <div className="px-3 py-2 text-[10px] text-muted-foreground">
           Phase 1 전용 · Firebase 로그인은 Phase 2
-        </Typography>
-      </Box>
-    </Menu>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
-
-DevUserSwitcher.propTypes = {
-  anchorEl: PropTypes.object,
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-};
